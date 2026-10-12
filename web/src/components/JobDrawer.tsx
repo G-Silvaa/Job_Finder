@@ -1,8 +1,9 @@
-import { ArrowUpRight, Brain, Check, ChevronDown, ChevronUp, EyeOff, LoaderCircle, Sparkles, Star, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowUpRight, Brain, Check, ChevronDown, ChevronUp, EyeOff, Languages, LoaderCircle, Sparkles, Star, Undo2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
 import { formatSalary, fullDate, relativeTime } from '../lib/format';
 import { AI_HINT, REGION_LABEL, SENIORITY_LABEL, STACK_DOT, STACK_LABEL, WORKMODE_LABEL } from '../lib/labels';
+import { browserCanTranslate, googleTranslateLinks, looksPortuguese, translateJob, type Translated } from '../lib/translate';
 import type { JobDetail, JobSummary, Mark } from '../lib/types';
 import { CompanyLogo } from './CompanyLogo';
 import { RegionIcon } from './RegionIcon';
@@ -36,11 +37,18 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
   const [detail, setDetail] = useState<JobDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  // tradução para português (feita pelo próprio navegador)
+  const [translated, setTranslated] = useState<Translated | null>(null);
+  const [showTranslated, setShowTranslated] = useState(false);
+  const [tState, setTState] = useState<{ status: 'idle' | 'loading' | 'error'; progress?: number; message?: string }>({ status: 'idle' });
 
   useEffect(() => {
     const ctrl = new AbortController();
     setDetail(null);
     setError(null);
+    setTranslated(null);
+    setShowTranslated(false);
+    setTState({ status: 'idle' });
     scroller.current?.scrollTo({ top: 0 });
     api
       .job(id, ctrl.signal)
@@ -64,6 +72,35 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, [onClose, onNext, onPrev]);
+
+  const plainText = useMemo(
+    () => (detail?.descriptionHtml ? (new DOMParser().parseFromString(detail.descriptionHtml, 'text/html').body.textContent ?? '') : ''),
+    [detail],
+  );
+  // o botão aparece quando a vaga não está em português (vagas de fora e as brasileiras escritas em inglês)
+  const canOfferTranslation = !!job && !!detail?.descriptionHtml && !looksPortuguese(`${job.title} ${plainText}`);
+
+  async function doTranslate() {
+    if (!job || !detail) return;
+    if (translated) return setShowTranslated(true);
+    setTState({ status: 'loading' });
+    try {
+      // se o navegador não conseguir baixar o tradutor, não deixa o botão girando para sempre
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('O tradutor do navegador não respondeu. Use o Google Tradutor ao lado.')), 120_000),
+      );
+      const t = await Promise.race([translateJob(job.title, detail.descriptionHtml, (p) => setTState({ status: 'loading', progress: p })), timeout]);
+      if (t.from.startsWith('pt')) {
+        setTState({ status: 'error', message: 'Esta vaga já está em português.' });
+        return;
+      }
+      setTranslated(t);
+      setShowTranslated(true);
+      setTState({ status: 'idle' });
+    } catch (e) {
+      setTState({ status: 'error', message: (e as Error).message });
+    }
+  }
 
   const salary = formatSalary(job?.salary);
   const date = job?.publishedAt ?? job?.firstSeenAt;
@@ -128,7 +165,10 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
               </div>
             </div>
 
-            <h2 className="mt-5 font-display text-[28px] leading-[1.08] font-bold tracking-[-0.035em] sm:text-[34px]">{job.title}</h2>
+            <h2 className="mt-5 font-display text-[28px] leading-[1.08] font-bold tracking-[-0.035em] sm:text-[34px]">
+              {showTranslated && translated ? translated.title : job.title}
+            </h2>
+            {showTranslated && translated && <p className="mt-1 font-mono text-[11px] text-muted">Original: {job.title}</p>}
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {job.isNew && <span className="rounded-full bg-lime px-2.5 py-0.5 font-mono text-[11px] font-bold text-ink uppercase">Nova</span>}
@@ -174,6 +214,17 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
                   </span>
                 ))}
               </p>
+            )}
+
+            {canOfferTranslation && (
+              <TranslateBar
+                state={tState}
+                active={showTranslated && !!translated}
+                supported={browserCanTranslate()}
+                links={googleTranslateLinks(job.url, plainText)}
+                onTranslate={doTranslate}
+                onOriginal={() => setShowTranslated(false)}
+              />
             )}
 
             <dl className="mt-7 grid grid-cols-2 gap-x-6">
@@ -238,10 +289,15 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
             )}
 
             <section className="mt-8">
-              <h3 className="font-mono text-[10.5px] tracking-[0.14em] text-muted uppercase">Descrição</h3>
+              <h3 className="font-mono text-[10.5px] tracking-[0.14em] text-muted uppercase">
+                Descrição{showTranslated && translated ? ' · traduzida para português' : ''}
+              </h3>
               {detail ? (
                 detail.descriptionHtml ? (
-                  <div className="job-description mt-3" dangerouslySetInnerHTML={{ __html: detail.descriptionHtml }} />
+                  <div
+                    className="job-description mt-3"
+                    dangerouslySetInnerHTML={{ __html: showTranslated && translated ? translated.html : detail.descriptionHtml }}
+                  />
                 ) : (
                   <p className="mt-3 text-sm text-muted">
                     A descrição desta vaga ainda não foi baixada (ou a fonte não a fornece). Abra a vaga original para ver todos os detalhes.
@@ -270,5 +326,58 @@ export function JobDrawer({ id, preview, sourceName, isCompanySite, onClose, onM
         )}
       </div>
     </aside>
+  );
+}
+
+function TranslateBar({
+  state,
+  active,
+  supported,
+  links,
+  onTranslate,
+  onOriginal,
+}: {
+  state: { status: 'idle' | 'loading' | 'error'; progress?: number; message?: string };
+  active: boolean;
+  supported: boolean;
+  links: { page: string; text: string };
+  onTranslate: () => void;
+  onOriginal: () => void;
+}) {
+  const btn = 'inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition';
+  return (
+    <div className="mt-3 rounded-2xl border border-line bg-surface-2 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {active ? (
+          <button onClick={onOriginal} className={`${btn} border border-line bg-surface hover:border-line-strong`}>
+            <Undo2 className="h-4 w-4" /> Ver original
+          </button>
+        ) : supported ? (
+          <button onClick={onTranslate} disabled={state.status === 'loading'} className={`${btn} bg-lime text-ink hover:brightness-95 disabled:opacity-80`}>
+            {state.status === 'loading' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
+            {state.status === 'loading'
+              ? state.progress !== undefined && state.progress < 1
+                ? `Baixando tradutor… ${Math.round(state.progress * 100)}%`
+                : 'Traduzindo…'
+              : 'Traduzir para português'}
+          </button>
+        ) : (
+          <a href={links.page} target="_blank" rel="noopener noreferrer" className={`${btn} bg-lime text-ink hover:brightness-95`}>
+            <Languages className="h-4 w-4" /> Abrir traduzida no Google Tradutor
+          </a>
+        )}
+        <a href={links.text} target="_blank" rel="noopener noreferrer" className="px-2 text-[12.5px] font-medium text-muted underline-offset-4 hover:text-fg hover:underline">
+          Traduzir texto no Google Tradutor
+        </a>
+      </div>
+      <p className="mt-2 px-1 text-[11.5px] text-muted">
+        {active
+          ? 'Tradução automática feita pelo seu navegador. Na dúvida sobre algum requisito, confira o original.'
+          : supported
+            ? 'A tradução é feita pelo próprio navegador, no seu computador (na primeira vez ele baixa o tradutor).'
+            : 'Seu navegador não traduz sozinho (Chrome ou Edge recentes traduzem aqui mesmo). Use o Google Tradutor.'}
+      </p>
+      {state.status === 'error' && <p className="mt-1 px-1 text-[12px] text-rose-600 dark:text-rose-400">{state.message}</p>}
+    </div>
   );
 }
