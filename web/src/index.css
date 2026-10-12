@@ -1,0 +1,302 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/inter-tight';
+@import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Linguagem visual inspirada em sites premiados no Awwwards: papel quente + tinta quase preta,
+ * tipografia grotesca bem apertada nos títulos, serifada itálica de contraste e metadados em mono.
+ * As cores semânticas mudam no modo escuro; os componentes usam só elas (bg-bg, text-fg, border-line...).
+ */
+:root {
+  --bg: #f2f1ec;
+  --surface: #ffffff;
+  --surface-2: #f7f6f2;
+  --fg: #0d0d0e;
+  --muted: #6c6b67;
+  --faint: #a3a29d;
+  --line: rgb(13 13 14 / 0.09);
+  --line-strong: rgb(13 13 14 / 0.18);
+  --invert-bg: #0d0d0e;
+  --invert-fg: #f2f1ec;
+  --shadow: 0 1px 0 rgb(13 13 14 / 0.04), 0 18px 40px -24px rgb(13 13 14 / 0.25);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0a0a0b;
+  --surface: #131315;
+  --surface-2: #1a1a1d;
+  --fg: #f2f1ec;
+  --muted: #9b9a95;
+  --faint: #5f5e5a;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --invert-bg: #f2f1ec;
+  --invert-fg: #0d0d0e;
+  --shadow: 0 1px 0 rgb(0 0 0 / 0.4), 0 24px 48px -24px rgb(0 0 0 / 0.8);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Inter Tight Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-invert: var(--invert-bg);
+  --color-invert-fg: var(--invert-fg);
+
+  /* acento "lima elétrico" (fica ótimo sobre o preto; sobre o claro é usado como fundo com texto escuro) */
+  --color-lime: #d7ff3c;
+  --color-lime-deep: #8fb300;
+  --color-ink: #0d0d0e;
+  --color-paper: #f2f1ec;
+
+  --shadow-soft: var(--shadow);
+  --animate-marquee: marquee 70s linear infinite;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(215 255 60 / 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(215 255 60 / 0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+/* granulado bem leve por cima de tudo, para tirar o aspecto "chapado" */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: #d7ff3c;
+  color: #0d0d0e;
+}
+
+/* barra de rolagem discreta */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* grade fininha usada no painel escuro do topo */
+.grid-lines {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.055) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 70% 40%, black 30%, transparent 75%);
+}
+
+.text-ai {
+  background: linear-gradient(100deg, #f0abfc 0%, #c084fc 45%, #818cf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* descrição da vaga (HTML sanitizado no servidor) */
+.job-description {
+  font-size: 0.96rem;
+  line-height: 1.72;
+  color: color-mix(in srgb, var(--fg) 82%, transparent);
+  overflow-wrap: anywhere;
+}
+.job-description > :first-child {
+  margin-top: 0;
+}
+.job-description p {
+  margin: 0.8em 0;
+}
+.job-description h4,
+.job-description h5,
+.job-description h6 {
+  margin: 1.6em 0 0.5em;
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.job-description ul,
+.job-description ol {
+  margin: 0.6em 0;
+  padding-left: 1.3em;
+}
+.job-description ul {
+  list-style: none;
+}
+.job-description ul > li {
+  position: relative;
+}
+.job-description ul > li::before {
+  content: '';
+  position: absolute;
+  left: -1em;
+  top: 0.72em;
+  width: 0.38em;
+  height: 0.38em;
+  border-radius: 99px;
+  background: var(--faint);
+}
+.job-description ol {
+  list-style: decimal;
+}
+.job-description li {
+  margin: 0.3em 0;
+}
+.job-description a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+.job-description a:hover {
+  text-decoration-color: currentColor;
+}
+.job-description strong,
+.job-description b {
+  font-weight: 650;
+  color: var(--fg);
+}
+.job-description code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+.job-description pre {
+  margin: 1em 0;
+  padding: 0.9em;
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow-x: auto;
+}
+.job-description blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--line-strong);
+  font-style: italic;
+}
+.job-description table {
+  margin: 1em 0;
+  width: 100%;
+  font-size: 0.9em;
+}
+.job-description td,
+.job-description th {
+  border: 1px solid var(--line);
+  padding: 0.35em 0.6em;
+}
+.job-description hr {
+  margin: 1.5em 0;
+  border-color: var(--line);
+}
+.job-description mark {
+  background: #d7ff3c;
+  color: #0d0d0e;
+  border-radius: 4px;
+  padding: 0 0.2em;
+  box-decoration-break: clone;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fg) 6%, transparent), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

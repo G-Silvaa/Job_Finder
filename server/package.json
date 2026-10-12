@@ -1,0 +1,30 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "start": "tsx src/index.ts",
+    "collect": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.6",
+    "better-sqlite3": "12.9.0",
+    "cheerio": "^1.2.0",
+    "entities": "^6.0.1",
+    "fast-xml-parser": "^5.11.2",
+    "fastify": "^5.12.5",
+    "marked": "^18.1.0",
+    "sanitize-html": "~2.17.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.19.0",
+    "@types/sanitize-html": "^2.16.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3"
+  }
+}
